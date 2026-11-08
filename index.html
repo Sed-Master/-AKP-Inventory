@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -24,60 +24,59 @@
 </head>
 <body>
   <h1>📊 Live Sheet Data</h1>
-  <p class="meta" id="meta">Loading…</p>
-  <div class="table-wrap" id="data"><p>Loading…</p></div>
+  <p class="meta" id="meta">Cargando…</p>
+  <div class="table-wrap" id="data"><p>Cargando…</p></div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <script>
-    const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR1ATW8BgNvotDExNUOBCNz2GMERN7JmIgVWBvzJvri5ZeIZPC21tJhLQsI_CYFclxrVQCkJ7cLIxlx/pub?gid=0&single=true&output=csv';
+    const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR1ATW8BgNvotDEnUOBCNz2GMERN7JmIgVWBvzJvri5ZeIZPC21tJhLQsl_CYFclxrVQCKJ7cLlxl/pub?gid=0&single=true&output=csv';
     const REFRESH_MS = 60000;
+
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
 
     async function load() {
       const dataEl = document.getElementById('data');
       const metaEl = document.getElementById('meta');
 
       try {
-        const res = await fetch(CSV_URL, { cache: 'no-store' });
+        const res = await fetch(CSV_URL + '&t=' + Date.now(), { cache: 'no-store' });
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const text = await res.text();
 
         if (text.trimStart().startsWith('<')) {
-          throw new Error('Received HTML instead of CSV.');
+          throw new Error('Se recibió HTML en vez de CSV. Revisá que la sheet esté publicada como CSV.');
         }
 
-        Papa.parse(text, {
-          header: true,
-          skipEmptyLines: true,
-          complete: function(results) {
-            var data = results.data;
-            var fields = results.fields;
+        const results = Papa.parse(text, { header: true, skipEmptyLines: true });
+        const data = results.data;
+        const fields = results.meta.fields;   // <-- acá estaba el bug
 
-            if (!fields || !fields.length || !data || !data.length) {
-              dataEl.innerHTML = '<p class="error">No data received.</p>';
-              metaEl.textContent = 'Error';
-              return;
-            }
+        if (!fields || !fields.length || !data.length) {
+          dataEl.innerHTML = '<p class="error">No se recibieron datos.</p>';
+          metaEl.textContent = 'Error';
+          return;
+        }
 
-            var html = '<table><thead><tr>';
-            fields.forEach(function(f) { html += '<th>' + f + '</th>'; });
-            html += '</tr></thead><tbody>';
-            data.forEach(function(row) {
-              html += '<tr>';
-              fields.forEach(function(f) { html += '<td>' + (row[f] || '') + '</td>'; });
-              html += '</tr>';
-            });
-            html += '</tbody></table>';
-            dataEl.innerHTML = html;
-            metaEl.textContent = data.length + ' rows · updated ' + new Date().toLocaleTimeString();
-          },
-          error: function(err) {
-            dataEl.innerHTML = '<p class="error">Parse error: ' + err.message + '</p>';
-            metaEl.textContent = 'Error';
-          }
+        let html = '<table><thead><tr>';
+        fields.forEach(f => { html += '<th>' + esc(f) + '</th>'; });
+        html += '</tr></thead><tbody>';
+        data.forEach(row => {
+          html += '<tr>';
+          fields.forEach(f => { html += '<td>' + esc(row[f]) + '</td>'; });
+          html += '</tr>';
         });
+        html += '</tbody></table>';
+
+        dataEl.innerHTML = html;
+        metaEl.textContent = data.length + ' filas · actualizado ' + new Date().toLocaleTimeString();
       } catch (e) {
-        dataEl.innerHTML = '<p class="error">' + e.message + '</p>';
-        metaEl.textContent = 'Error';
+        // si ya hay una tabla mostrada, la dejamos y solo avisamos del error
+        if (!dataEl.querySelector('table')) {
+          dataEl.innerHTML = '<p class="error">' + esc(e.message) + '</p>';
+        }
+        metaEl.textContent = 'Error al actualizar: ' + e.message;
       }
     }
 
@@ -85,4 +84,4 @@
     setInterval(load, REFRESH_MS);
   </script>
 </body>
-</html>   
+</html>
