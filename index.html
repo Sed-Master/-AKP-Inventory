@@ -41,7 +41,7 @@
       const metaEl = document.getElementById('meta');
 
       try {
-        const res = await fetch(CSV_URL + '&t=' + Date.now(), { cache: 'no-store' });
+        const res = await fetch(CSV_URL, { cache: 'no-store' });
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const text = await res.text();
 
