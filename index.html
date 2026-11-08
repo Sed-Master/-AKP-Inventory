@@ -45,6 +45,15 @@
               document.getElementById('data').innerHTML = '<p>Sheet is empty.</p>';
               return;
             }
+            complete: (results) => {
+  const { data, fields } = results;
+  if (!fields || !data.length) {
+    document.getElementById('data').innerHTML =
+      '<p style="color:red">No data received. Check your CSV URL.</p>';
+    return;
+  }
+  // ... rest of the code
+}
             let html = '<table><thead><tr>';
             fields.forEach(f => html += `<th>${f}</th>`);
             html += '</tr></thead><tbody>';
