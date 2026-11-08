@@ -19,6 +19,7 @@
     th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid #e5e7eb; }
     th { background: #1f2937; color: #fff; font-size: .85rem; text-transform: uppercase; }
     tr:hover td { background: #f3f4f6; }
+    .error { color: #dc2626; }
   </style>
 </head>
 <body>
@@ -28,32 +29,36 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <script>
-    const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR1ATW8BgNvotDExNUOBCNz2GMERN7JmIgVWBvzJvri5ZeIZPC21tJhLQsI_CYFclxrVQCkJ7cLIxlx/pub?gid=0&single=true&output=csv';
+    const CSV_URL = 'PASTE_YOUR_PUBLISHED_CSV_URL_HERE';
     const REFRESH_MS = 60_000;
 
     async function load() {
+      const dataEl = document.getElementById('data');
+      const metaEl = document.getElementById('meta');
+
       try {
         const res = await fetch(CSV_URL, { cache: 'no-store' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const text = await res.text();
 
+        // Guard: check if response is actually CSV, not an HTML error page
+        if (text.trimStart().startsWith('<')) {
+          throw new Error('Received HTML instead of CSV. Check your URL and publish settings.');
+        }
+
         Papa.parse(text, {
-          header: true, skipEmptyLines: true,
+          header: true,
+          skipEmptyLines: true,
           complete: (results) => {
             const { data, fields } = results;
-            if (!data.length) {
-              document.getElementById('data').innerHTML = '<p>Sheet is empty.</p>';
+
+            // Guard: fields or data might be undefined if CSV is malformed
+            if (!fields || !fields.length || !data || !data.length) {
+              dataEl.innerHTML = '<p class="error">No data received. Check your CSV URL.</p>';
+              metaEl.textContent = 'Error';
               return;
             }
-            complete: (results) => {
-  const { data, fields } = results;
-  if (!fields || !data.length) {
-    document.getElementById('data').innerHTML =
-      '<p style="color:red">No data received. Check your CSV URL.</p>';
-    return;
-  }
-  // ... rest of the code
-}
+
             let html = '<table><thead><tr>';
             fields.forEach(f => html += `<th>${f}</th>`);
             html += '</tr></thead><tbody>';
@@ -63,13 +68,18 @@
               html += '</tr>';
             });
             html += '</tbody></table>';
-            document.getElementById('data').innerHTML = html;
-            document.getElementById('meta').textContent =
+            dataEl.innerHTML = html;
+            metaEl.textContent =
               `${data.length} rows · updated ${new Date().toLocaleTimeString()}`;
+          },
+          error: (err) => {
+            dataEl.innerHTML = `<p class="error">Parse error: ${err.message}</p>`;
+            metaEl.textContent = 'Error';
           }
         });
       } catch (e) {
-        document.getElementById('data').innerHTML = `<p style="color:red">${e.message}</p>`;
+        dataEl.innerHTML = `<p class="error">${e.message}</p>`;
+        metaEl.textContent = 'Error';
       }
     }
 
