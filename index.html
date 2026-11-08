@@ -27,9 +27,9 @@
   <p class="meta" id="meta">Loading…</p>
   <div class="table-wrap" id="data"><p>Loading…</p></div>
 
-  <script src="https://docs.google.com/spreadsheets/d/e/2PACX-1vR1ATW8BgNvotDExNUOBCNz2GMERN7JmIgVWBvzJvri5ZeIZPC21tJhLQsI_CYFclxrVQCkJ7cLIxlx/pub?gid=0&single=true&output=tsv"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <script>
-    const CSV_URL = 'PASTE_YOUR_PUBLISHED_CSV_URL_HERE';
+    const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR1ATW8BgNvotDExNUOBCNz2GMERN7JmIgVWBvzJvri5ZeIZPC21tJhLQsI_CYFclxrVQCkJ7cLIxlx/pub?gid=0&single=true&output=tsv';
     const REFRESH_MS = 60_000;
 
     async function load() {
@@ -84,6 +84,10 @@
     }
 
     load();
+    setInterval(load, REFRESH_MS);
+  </script>
+</body>
+</html>   
     setInterval(load, REFRESH_MS);
   </script>
 </body>
